@@ -1,51 +1,66 @@
-clear all;
-close all;
-clc 
+%% Numerical solution of GPE using TSSP
+% Ref: Bao et al. Jour of Comp Phys 187 (2003) 318-342
+
+clear all; close all; clc;
 
 vareps = 0.1;
 kappa1 = 1.2649;
-a = -16; b =16;
-M = 16*32;
+a = -16; b = 16;
+
 h = 1/16;          % h is the mesh size: h = (b-a)/M
-k = 0.02;
+M = round(1/h*(b-a));
+k = 0.01;
 
 x = a:h:b;
-% x = (a+h/2):h:(b-h/2);
 l = -M/2:(M/2-1);
 j_id = 0:(M-1);
 mu_l = 2*pi*l/(b-a);
 
-psi_x = 1/((pi*vareps)^(1/4))*exp(-x.^2/2/vareps);
-Nk = 1000;
-idd = intersect(find(x<8), find(x>-8));
+% S0 = -log(exp(x)+exp(-x));
+% psi_x = exp(-x.^2).*(1+0.2*cos(x/sqrt(vareps)).*cos(x/sqrt(vareps))).*exp(1i/vareps.*S0);
+psi_x = 1/(pi*vareps*10)^(1/4)*exp(-x.^2/2/vareps/10);
+
+Nk = -10/k;
+idd = intersect(find(x<1.5), find(x>-1.5));
 
 abc = zeros(length(idd),Nk);
 sigm_w = zeros(size(1:Nk));
+x_com = zeros(size(1:Nk));
 
 for kk = 1:Nk
-        psi_star = exp(-1i* (x.^2/2+kappa1*(psi_x).*(conj(psi_x)))...
-                            *k/2/vareps)                            .*psi_x;
+    psi_star = exp(-1i* (x.^2/2 + kappa1*abs(psi_x).^2)...
+                        *k/2/vareps)                            .*psi_x;
 
-        psi_starHat = zeros(size(l));
-        psi_doubleStar = zeros(size(j_id));
+    
+    psi_starHat = psi_star(1:M)*exp(-1i*(x(1:M)-a)'*mu_l);
+    psi_doubleStar = 1/M * (exp(-1i*vareps*k*mu_l.^2/2).*psi_starHat) * exp(1i*mu_l'*(x(1:M)-a));
+    
+    psi_x(1:length(j_id)) = exp(-1i*(x(1:M).^2/2+kappa1*abs(psi_doubleStar).^2)*k/2/vareps).*psi_doubleStar;
+    psi_x(M+1)=psi_x(1);
 
-        for ll = 1:length(l)
-            psi_starHat(ll) = sum(psi_star(1:M).*exp(-1i*mu_l(ll)*(x(1:M)-a)));
-        end
+    abc(:,kk) = abs(psi_x(idd)).^2;
+    aa = abs(psi_x).^2;
 
-        for jj = 1:length(j_id)
-            psi_doubleStar(jj) = 1/M*sum(exp(-1i*vareps*k*mu_l.^2/2).*psi_starHat.*exp(1i*mu_l*(x(jj)-a)));
-            psi_x(jj) = exp(-1i*(x(jj)^2/2+kappa1*abs(psi_doubleStar(jj))^2)*k/2/vareps)*psi_doubleStar(jj);
-        end
-        psi_x(M+1)=psi_x(1);
-%         psi_x = exp(-1i*(x.^2/2+kappa1*abs(psi_doubleStar).^2)*k/2/vareps).*psi_doubleStar;
-        abc(:,kk) = abs(psi_x(idd)).^2;
-        aa = abs(psi_x).^2;
-        
-        
-        ia = max(aa);
-        idx = intersect(find(aa<(ia/exp(1)+0.005)),find(aa>(ia/exp(1)-0.005)));
-        sigm_w(kk) = mean(abs(x(idx)));
+    x_av = sum(x.*aa*h);
+    x_com(kk) = x_av;
+    sigma_sq = sum(((x).^2).*aa*h);
+
+    sigm_w(kk) = sqrt(sigma_sq);
 end
 
-% figure;plot(x(201:313),abs(psi_x(201:313)).^2)
+figure
+Z = peaks; surf(Z); 
+axis tight
+set(gca,'NextPlot','replacechildren');
+% Preallocate the struct array for the struct returned by getframe
+F(20) = struct('cdata',[],'colormap',[]);
+% Record the movie
+for j = 1:20 
+    surf(.01+sin(2*pi*j/20)*Z,Z)
+    F(j) = getframe;
+end
+
+
+
+
+figure; plot((1:Nk)*k,sigm_w,'b-');
