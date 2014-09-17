@@ -6,13 +6,14 @@ clear all; close all; clc;
 vareps = 1;
 gamma_y = 2;
 kappa_2 = 0.1;
+mu2s = sqrt(kappa_2*gamma_y/pi);
 ax = -4; bx = 4;
 ay = -4; by = 4;
 
 h = 1/8;           % h is the mesh size: h = (b-a)/M
 Mx = round(1/h*(bx-ax));
 My = round(1/h*(by-ay));
-k = 0.02;          % k is the time step interval
+k = 0.01;          % k is the time step interval
 
 x = ax:h:bx;
 y = ay:h:by;
@@ -27,9 +28,16 @@ mu_lx = 2*pi*lx/(bx-ax);
 mu_ly = 2*pi*ly/(by-ay);
 
 [yy,xx] = meshgrid(y,x);
+% psi_xy = zeros(size(yy));
 % psi_xy = 1/sqrt(pi*vareps)*exp(-(xx.^2+yy.^2)/2/vareps);
-S0 = cosh(sqrt(xx.^2 + 2*yy.^2));
-psi_xy = gamma_y^(1/4)/sqrt(pi*vareps)*exp(-(xx.^2+gamma_y*yy.^2)/2/vareps).*exp(-1i/vareps*S0);
+% for ii = 1:length(x)
+%     for jj = 1:length(y)
+%         if (xx(ii,jj)^2+yy(ii,jj)^2) < (2*mu2s)
+            S0 = cosh(sqrt(xx.^2 + 2*yy.^2));
+            psi_xy = gamma_y^(1/4)/sqrt(pi*vareps)*exp(-(xx.^2+gamma_y*yy.^2)/2/vareps).*exp(-1i/vareps*S0);
+%         end
+%     end
+% end
 
 Nk = 4/k;
 
@@ -63,7 +71,8 @@ for kk = 1:Nk
             psi_doubleStar(ii,jj) = 1/Mx * 1/My * sum(sum(((exp(-1i*vareps*k*mu_lx.^2/2+1i*mu_lx*(xx(ii,jj)-ax))).' * ...
                                                   (exp(-1i*vareps*k*mu_ly.^2/2+1i*mu_ly*(yy(ii,jj)-ay)))) .* psi_starHat));
                                               
-            psi_xy(ii,jj) = exp(-1i*(x(ii)^2/2 + gamma_y^2*y(jj)^2/2+kappa_2*abs(psi_doubleStar(ii,jj)^2))*k/2/vareps)*psi_doubleStar(ii,jj);
+            psi_xy(ii,jj) = exp(-1i*(x(ii)^2/2 + gamma_y^2*y(jj)^2/2 + kappa_2*abs(psi_doubleStar(ii,jj)^2))...
+                                                                       *k/2/vareps)                         *psi_doubleStar(ii,jj);
         end
     end
     
