@@ -1,19 +1,20 @@
 %% Numerical solution of GPE using TSSP - Two dimensional
 % Ref: Bao et al. Jour of Comp Phys 187 (2003) 318-342
+% Benchmark to Example 2
 
 clear all; close all; clc;
 
-vareps = 1;
-gamma_y = 2;
-kappa_2 = 0.1;
+vareps = 0.1;
+gamma_y = 1.0;
+kappa_2 = 1.2649;
 mu2s = sqrt(kappa_2*gamma_y/pi);
-ax = -4; bx = 4;
-ay = -4; by = 4;
+ax = -6; bx = 6;
+ay = -6; by = 6;
 
-h = 1/8;           % h is the mesh size: h = (b-a)/M
+h = 1/32;           % h is the mesh size: h = (b-a)/M
 Mx = round(1/h*(bx-ax));
 My = round(1/h*(by-ay));
-k = 0.01;          % k is the time step interval
+k = 0.005;          % k is the time step interval
 
 x = ax:h:bx;
 y = ay:h:by;
@@ -28,18 +29,26 @@ mu_lx = 2*pi*lx/(bx-ax);
 mu_ly = 2*pi*ly/(by-ay);
 
 [yy,xx] = meshgrid(y,x);
-% psi_xy = zeros(size(yy));
-% psi_xy = 1/sqrt(pi*vareps)*exp(-(xx.^2+yy.^2)/2/vareps);
-% for ii = 1:length(x)
-%     for jj = 1:length(y)
-%         if (xx(ii,jj)^2+yy(ii,jj)^2) < (2*mu2s)
-            S0 = cosh(sqrt(xx.^2 + 2*yy.^2));
-            psi_xy = gamma_y^(1/4)/sqrt(pi*vareps)*exp(-(xx.^2+gamma_y*yy.^2)/2/vareps).*exp(-1i/vareps*S0);
-%         end
-%     end
-% end
+psi_xy = zeros(size(yy));
 
-Nk = 4/k;
+% -- eg 2.1 initial condition
+% psi_xy = 1/sqrt(pi*vareps)*exp(-(xx.^2+yy.^2)/2/vareps);
+
+% S0 = cosh(sqrt(xx.^2 + 2*yy.^2));
+% psi_xy = gamma_y^(1/4)/sqrt(pi*vareps)*exp(-(xx.^2+gamma_y*yy.^2)/2/vareps).*exp(-1i/vareps*S0);
+            
+for ii = 1:length(x)
+    for jj = 1:length(y)
+        if (xx(ii,jj)^2+yy(ii,jj)^2) < (2*mu2s)
+            S0 = cosh(sqrt(xx(ii,jj)^2 + 2*yy(ii,jj)^2));
+            
+            psi_xy(ii,jj) = sqrt((mu2s - (xx(ii,jj)^2+yy(ii,jj)^2))/kappa_2)*exp(-1i/vareps*S0);
+            %gamma_y^(1/4)/sqrt(pi*vareps)*exp(-(xx.^2+gamma_y*yy.^2)/2/vareps).*exp(-1i/vareps*S0);
+        end
+    end
+end
+
+Nk = 10/k;
 
 % % idd = intersect(find(x<=3), find(x>=0));
 % % 
